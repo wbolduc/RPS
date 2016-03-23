@@ -44,12 +44,15 @@ class randomPlayer():
         print("Player Wins = " + str(self.playerWins))
         print("       Ties = " + str(ties))
         print("Total Games = " + str(self.gamesPlayed) + "\n")
-        print("   bot has a %" + str(round(self.botWins/self.gamesPlayed * 100,3)) + " win rate")
-        print("player has a %" + str(round(self.playerWins/self.gamesPlayed * 100,3)) + " win rate\n")
+        self.showWinRates()
         print("likelyhood of score compared to random play:")
         print("player wins -> " + str(significance(1/3,self.gamesPlayed, self.playerWins)))
         print("   bot wins -> " + str(significance(1/3,self.gamesPlayed, self.botWins)))
         print("       ties -> " + str(significance(1/3,self.gamesPlayed, ties)))
+
+    def showWinRates(self):
+        print("   bot has a %" + str(round(self.botWins/self.gamesPlayed * 100,3)).ljust(6," ") + " win rate")
+        print("player has a %" + str(round(self.playerWins/self.gamesPlayed * 100,3)).ljust(6," ") + " win rate\n")
 
     def saveData(self, filename = "saves/randomPlayer.rpsd"):
         newRockCount    = self.rockCount
