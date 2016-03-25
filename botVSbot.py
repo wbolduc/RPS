@@ -1,6 +1,7 @@
 from randomPlayer import *
 from nTransitionBot import *
 from basicPlayer import *
+from runBot import *
 
 def playToWin( prediction ):
     prediction += 1
@@ -10,7 +11,7 @@ def playToWin( prediction ):
 
 if __name__ == "__main__":
     bot1 = nTBot()
-    bot2 = nTBot(1)
+    bot2 = runBot()
 
     for i in range(1000):
         bot1Move = playToWin(bot1.predict())

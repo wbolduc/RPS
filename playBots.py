@@ -1,7 +1,6 @@
-from Getch import *
+import sys
 
-from randomPlayer import *
-from nTransitionBot import *
+from Getch import *
 
 def playToWin( prediction ):
     prediction += 1
@@ -9,15 +8,46 @@ def playToWin( prediction ):
         prediction = 1
     return prediction
 
+class getMove():
+    def __init__(self, playList = None):
+        self.playList = playList
+        self.currentMove = 0
+
+    def move( self ):
+        if self.playList == None:
+            return getch()
+        else:
+            self.currentMove += 1
+            return self.playList[self.currentMove - 1]
+
 
 if __name__ == "__main__":
-    bot = nTBot(2)
+    try:
+        botName = sys.argv[1].split(".")[0]
+        module_obj = __import__(botName)
+        globals()[botName] = module_obj
+    except ImportError:
+        print("No Bot called " + botName)
+        sys.exit(1)
+
+    try:
+        f = open(sys.argv[2],'r')
+        get = getMove(list(f.read()))
+        f.close()
+    except IndexError:
+        get = getMove()
+
+    bot = getattr(module_obj,botName)()
+
+
+
+
 
     while True:
         #Get bot predictions
         botMove = playToWin(bot.predict())
         #get player's move
-        playerMove = getch()
+        playerMove = get.move()
 
         #check for valid player move
         if playerMove in "0123":
