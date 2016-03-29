@@ -5,7 +5,7 @@ import random
 #   ROCK    PAPER   SCISSORS
 #   1       2       3
 
-class nTransitionBot():
+class comboBot():
 
     def __init__(self, scopeSize = 2):
         #basic metrics
@@ -18,50 +18,57 @@ class nTransitionBot():
         self.playerWins     = 0
 
         #prediction metrics
-        self.pastMoves = [0] * scopeSize
+        self.runPick = 0
+        self.nTPick  = 0
+
+        #run metrics
+        self.runList    = {}
+        self.runLength  = 0
+        self.currentRun = 0
+        #nT metrics
+        self.pastMoves  = [0] * scopeSize
         self.moveChunks = {}
 
-        #make all the move chunks
-        chunk = [1] * scopeSize
-        place = 0
-        while place != scopeSize:
-            self.moveChunks[tuple(chunk)] = [0,0,0,0]                   #totalOccurences, rockCount, paperCount, scissorCount
-            place = 0
-            while place < scopeSize and chunk[place] > 2:
-                chunk[place] = 1
-                place += 1
-            if place < scopeSize:
-                chunk[place] += 1
+        self.lastPredictions = []
+
 
     def loadPastData( self, filename = "saves/basicPlayer.rpsd"):
         pass
 
     def predict(self):
-        #picks the next likely move based on the previous 3 moves
+        #run: (play, count) = [total, rock, paper, scissors, correctPredictions]
+        #scope: (Xn-1...Xn) = [total, rock, paper, scissors, correctPredictions]
+        run   = self.runList.setdefault((self.currentRun, self.runLength),[1,1,1,1,1])
+        nT = self.moveChunks.setdefault(tuple(self.pastMoves),[1,1,1,1,1])
+        selections = []
 
-        #get move chunk
-        chunk = self.moveChunks.setdefault(tuple(self.pastMoves),[0,0,0,0])
-
-        #totalOccurences, rockCount, paperCount, scissorCount
-
-        if chunk[0] == 0:
-            return random.randrange(3) + 1
-        else:
-            rockLikelyHood = chunk[1] / chunk[0]
-            paperLikelyHood = chunk[2] / chunk[0]
-            scissorLikelyHood = chunk[3] / chunk[0]
-
-            if rockLikelyHood > paperLikelyHood:
-                if scissorLikelyHood > rockLikelyHood:
-                    return 3
-                else:
-                    return 1
+        for metric in (run, nT):
+            if metric[0] == 0:
+                selections.append(random.randrange(3) + 1)
             else:
-                if scissorLikelyHood > paperLikelyHood:
-                    return 3
-                else:
-                    return 2
+                rockLikelyHood = metric[1] / metric[0]
+                paperLikelyHood = metric[2] / metric[0]
+                scissorLikelyHood = metric[3] / metric[0]
 
+                if rockLikelyHood > paperLikelyHood:
+                    if scissorLikelyHood > rockLikelyHood:
+                        selections.append(3)
+                    else:
+                        selections.append(1)
+                else:
+                    if scissorLikelyHood > paperLikelyHood:
+                        selections.append(3)
+                    else:
+                        selections.append(2)
+
+        #save predictions
+        self.lastPredictions = selections
+        if  run[4]/run[0] < nT[4]/nT[0]:
+            return selections[0] #run's selection
+        elif run[4]/run[0] > nT[4]/nT[0]:
+            return selections[1] #nT's selection
+        else: #both are equal, pick a random one
+            return selections[random.randrange(2)]
 
     def report(self, playerMove, botWin):
         #update basic data
@@ -80,15 +87,35 @@ class nTransitionBot():
 
         #update prediction data
 
-        #update this transition
-        chunk = self.moveChunks.setdefault(tuple(self.pastMoves),[0,0,0,0])
+        #update this run transition
+        run = self.runList.setdefault((self.currentRun, self.runLength),[1,1,1,1,1])
+        run[0] += 1
+        run[playerMove] += 1
+        #update this run's correctPredictions
+        if self.lastPredictions[0] == playerMove:
+            run[4] += 1
+        self.runList[(self.currentRun, self.runLength)] = run
+
+        #update current run moves
+        if playerMove == self.currentRun:
+            self.runLength += 1
+        else:
+            self.runLength = 1
+            self.currentRun = playerMove
+
+
+        #update this nT transition
+        chunk = self.moveChunks.setdefault(tuple(self.pastMoves),[1,1,1,1,1])
         chunk[0] += 1
         chunk[playerMove] += 1
+        #update this nT's correctPredictions
+        if self.lastPredictions[1] == playerMove:
+            chunk[4] += 1
+
         self.moveChunks[tuple(self.pastMoves)] = chunk
 
-        #update past 3 moves
+        #update past n moves
         self.pastMoves = self.pastMoves[1:] + [playerMove]
-
 
     def showData(self):
         ties = self.gamesPlayed - self.botWins - self.playerWins
@@ -111,7 +138,7 @@ class nTransitionBot():
         print("   bot has a %" + str(round(self.botWins/self.gamesPlayed * 100,3)).ljust(6," ") + " win rate")
         print("player has a %" + str(round(self.playerWins/self.gamesPlayed * 100,3)).ljust(6," ") + " win rate\n")
 
-    def saveData(self, filename = "saves/nTPlayer.rpsd" ):
+    def saveData(self, filename = "saves/comboBot.rpsd" ):
         newRockCount    = self.rockCount
         newPaperCount   = self.paperCount
         newScissorCount = self.scissorCount

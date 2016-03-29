@@ -9,6 +9,12 @@ def playToWin( prediction ):
         prediction = 1
     return prediction
 
+def playToLose( prediction ):
+    prediction -= 1
+    if prediction == 0:
+        prediction = 3
+    return prediction
+
 if __name__ == "__main__":
     bot1 = nTBot()
     bot2 = runBot()

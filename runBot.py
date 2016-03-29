@@ -5,7 +5,7 @@ import random
 #   ROCK    PAPER   SCISSORS
 #   1       2       3
 
-class nTransitionBot():
+class runBot():
 
     def __init__(self, scopeSize = 2):
         #basic metrics
@@ -18,38 +18,25 @@ class nTransitionBot():
         self.playerWins     = 0
 
         #prediction metrics
-        self.pastMoves = [0] * scopeSize
-        self.moveChunks = {}
+        self.runList = {}
+        self.runLength = 0
+        self.currentRun = 0
 
-        #make all the move chunks
-        chunk = [1] * scopeSize
-        place = 0
-        while place != scopeSize:
-            self.moveChunks[tuple(chunk)] = [0,0,0,0]                   #totalOccurences, rockCount, paperCount, scissorCount
-            place = 0
-            while place < scopeSize and chunk[place] > 2:
-                chunk[place] = 1
-                place += 1
-            if place < scopeSize:
-                chunk[place] += 1
 
     def loadPastData( self, filename = "saves/basicPlayer.rpsd"):
         pass
 
     def predict(self):
-        #picks the next likely move based on the previous 3 moves
+        #run: (play, count) = [total, rock, paper, scissors]
+        run = self.runList.setdefault((self.currentRun, self.runLength),[0,0,0,0])
 
-        #get move chunk
-        chunk = self.moveChunks.setdefault(tuple(self.pastMoves),[0,0,0,0])
 
-        #totalOccurences, rockCount, paperCount, scissorCount
-
-        if chunk[0] == 0:
+        if run[0] == 0:
             return random.randrange(3) + 1
         else:
-            rockLikelyHood = chunk[1] / chunk[0]
-            paperLikelyHood = chunk[2] / chunk[0]
-            scissorLikelyHood = chunk[3] / chunk[0]
+            rockLikelyHood = run[1] / run[0]
+            paperLikelyHood = run[2] / run[0]
+            scissorLikelyHood = run[3] / run[0]
 
             if rockLikelyHood > paperLikelyHood:
                 if scissorLikelyHood > rockLikelyHood:
@@ -81,13 +68,18 @@ class nTransitionBot():
         #update prediction data
 
         #update this transition
-        chunk = self.moveChunks.setdefault(tuple(self.pastMoves),[0,0,0,0])
-        chunk[0] += 1
-        chunk[playerMove] += 1
-        self.moveChunks[tuple(self.pastMoves)] = chunk
+        run = self.runList.setdefault((self.currentRun, self.runLength),[0,0,0,0])
+        run[0] += 1
+        run[playerMove] += 1
+        self.runList[(self.currentRun, self.runLength)] = run
 
-        #update past 3 moves
-        self.pastMoves = self.pastMoves[1:] + [playerMove]
+        #update current run moves
+        if playerMove == self.currentRun:
+            self.runLength += 1
+        else:
+            self.runLength = 1
+            self.currentRun = playerMove
+
 
 
     def showData(self):
